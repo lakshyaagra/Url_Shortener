@@ -1,0 +1,39 @@
+// use prisma-next
+// Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
+
+model Users {
+  id           Int          @id(map: "users_pkey") @default(autoincrement())
+  name         VarChar(100)
+  email        VarChar(255) @unique(map: "users_email_key")
+  passwordHash VarChar(100) @map("password_hash")
+  createdAt    Timestamp?   @default(now()) @map("created_at")
+  urls         Urls[]
+
+  @@map("users")
+}
+
+model Urls {
+  id          Int           @id(map: "urls_pkey") @default(autoincrement())
+  userId      Int           @map("user_id")
+  shortCode   VarChar(20)   @unique(map: "urls_short_code_key") @map("short_code")
+  originalUrl VarChar(2048) @map("original_url")
+  createdAt   Timestamp?    @default(now()) @map("created_at")
+  expiresAt   Timestamp?    @map("expires_at")
+  isActive    Boolean?      @default(true) @map("is_active")
+  clicks      Clicks[]
+  user        Users         @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_urls_user", index: false)
+
+  @@map("urls")
+}
+
+model Clicks {
+  id        Int            @id(map: "clicks_pkey") @default(autoincrement())
+  urlId     Int            @map("url_id")
+  clickedAt Timestamp?     @default(now()) @map("clicked_at")
+  ipAddress VarChar(45)?   @map("ip_address")
+  userAgent VarChar(500)?  @map("user_agent")
+  referrer  VarChar(2048)?
+  url       Urls           @relation(fields: [urlId], references: [id], onDelete: Cascade, map: "fk_clicks_url", index: false)
+
+  @@map("clicks")
+}
