@@ -1,4 +1,4 @@
-import { getAllUrls, createUrl } from '../services/url.service.js';
+import { getAllUrls, createUrl, getUrlByShortCode, recordClick } from '../services/url.service.js';
 
 export async function getUrls(_, res) {
   try {
@@ -76,6 +76,60 @@ export async function createUrlController(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to create URL',
+    });
+  }
+}
+
+export async function redirectUrl(req, res) {
+  try {
+    const { shortCode } = req.params;
+
+    const url = await getUrlByShortCode(shortCode);
+
+    if (!url) {
+      return res.status(404).json({
+        success: false,
+        message: 'Short URL not found',
+      });
+    }
+
+    if (!url.isActive) {
+      return res.status(410).json({
+        success: false,
+        message: 'Short URL is inactive',
+      });
+    }
+
+    if (url.expiresAt && url.expiresAt <= new Date()) {
+      return res.status(410).json({
+        success: false,
+        message: 'Short URL has expired',
+      });
+    }
+
+    await recordClick({
+      urlId: url.id,
+      ipAddress: req.ip,       // Express gives us the request IP.
+      userAgent: req.get('user-agent') || null,
+      referrer: req.get('referer') || null,  // HTTP uses the historical header name:
+    });
+
+    return res.redirect(url.originalUrl);
+    // Suppose:
+    // url.originalUrl
+    // =
+    // https://www.youtube.com/
+    // Express sends a redirect response.
+    // The browser then navigates to:
+    // https://www.youtube.com/
+    // So our backend becomes a real URL shortener.
+    
+  } catch (error) {
+    console.error('Failed to redirect URL:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to redirect URL',
     });
   }
 }

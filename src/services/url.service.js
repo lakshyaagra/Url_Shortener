@@ -58,3 +58,29 @@ export async function createUrl({ userId, originalUrl }) {
 
   throw new Error('Unable to generate a unique short code');
 }
+
+export async function getUrlByShortCode(shortCode) {
+  const url = await db.orm.public.Urls
+    .where({
+      shortCode,
+    })
+    .first();
+
+  return url;
+}
+ 
+export async function recordClick({
+  urlId,
+  ipAddress,
+  userAgent,
+  referrer,
+}) {
+  const click = await db.orm.public.Clicks.create({
+    urlId,
+    ipAddress,
+    userAgent,
+    referrer,
+  });
+
+  return click;
+}
