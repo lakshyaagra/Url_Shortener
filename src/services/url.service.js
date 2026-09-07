@@ -5,8 +5,11 @@ import { generateShortCode } from '../utils/short-code.js';
 // db.orm.public.Urls
 // means we're accessing the Urls model generated from our Prisma contract.
 
-export async function getAllUrls() {
+export async function getAllUrls(userId) {
   const urls = await db.orm.public.Urls
+    .where({
+      userId
+    })
     .select(
       'id',
       'userId',
@@ -83,4 +86,16 @@ export async function recordClick({
   });
 
   return click;
+}
+
+//scoping the query by ownership.
+export async function getUrlByShortCodeForUser(shortCode, userId) {
+  const url = await db.orm.public.Urls
+    .where({
+      shortCode,
+      userId,
+    })
+    .first();
+
+  return url;
 }

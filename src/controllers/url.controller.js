@@ -1,8 +1,8 @@
 import { getAllUrls, createUrl, getUrlByShortCode, recordClick } from '../services/url.service.js';
 
-export async function getUrls(_, res) {
+export async function getUrls(req, res) {
   try {
-    const urls = await getAllUrls();
+    const urls = await getAllUrls(req.user.userId);
 
     res.json({
       success: true,
@@ -52,7 +52,7 @@ export async function createUrlController(req, res) {
       });
     }
 
-    const userId = 1;
+    const userId = req.user.userId;
 
     const url = await createUrl({
       userId,

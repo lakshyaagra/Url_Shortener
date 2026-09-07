@@ -4,11 +4,12 @@ import {
   createUrlController,
   redirectUrl
 } from '../controllers/url.controller.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.get('/', getUrls);
-router.post('/', createUrlController);
+router.get('/', authMiddleware, getUrls);
+router.post('/', authMiddleware, createUrlController);
 router.get('/:shortCode', redirectUrl);
 
 export default router;
