@@ -89,13 +89,81 @@ export async function recordClick({
 }
 
 //scoping the query by ownership.
-export async function getUrlByShortCodeForUser(shortCode, userId) {
-  const url = await db.orm.public.Urls
+// export async function getUrlByShortCodeForUser(shortCode, userId) {
+//   const url = await db.orm.public.Urls
+//     .where({
+//       shortCode,
+//       userId,
+//     })
+//     .first();
+
+//   return url;
+// }
+
+export async function updateUrlForUser({
+  shortCode,
+  userId,
+  originalUrl,
+  expiresAt,
+  isActive,
+}){
+
+  //to fetch old url and by which we can get its id and then update it from database
+  const url=await db.orm.public.Urls
     .where({
       shortCode,
       userId,
     })
     .first();
 
-  return url;
+    if(!url){
+      return null;
+    }
+
+    const updates={};
+
+    if(originalUrl!==undefined){
+      updates.originalUrl=originalUrl;
+    }
+    if(expiresAt!==undefined){
+      updates.expiresAt=expiresAt;
+    }
+    if(isActive!==undefined){
+      updates.isActive=isActive;
+    }
+    if(Object.keys(updates).length===0){
+      const error=new Error('No fields to update');
+      error.code='NO_UPDATE_FIELDS';
+      throw error;
+    }
+    const updatedUrl=await db.orm.public.Urls
+      .where({
+        id:url.id,
+      })
+      .update(updates);
+
+      return updatedUrl;
+}
+
+export async function deleteUrlForUser({ shortCode, userId }){
+
+  //to fetch old url and by which we can get its id and then delete it from database
+  const url=await db.orm.public.Urls
+    .where({
+      shortCode,
+      userId,
+    })
+    .first();
+
+    if(!url){
+      return null;
+    }
+    
+    const deletedUrl=db.orm.public.Urls
+      .where({
+        id:url.id,
+      })
+      .delete();
+
+      return deletedUrl;
 }

@@ -1,4 +1,6 @@
-import { getAllUrls, createUrl, getUrlByShortCode, recordClick } from '../services/url.service.js';
+import { getAllUrls, createUrl, getUrlByShortCode,
+        recordClick, updateUrlForUser, deleteUrlForUser 
+      } from '../services/url.service.js';
 
 export async function getUrls(req, res) {
   try {
@@ -131,5 +133,77 @@ export async function redirectUrl(req, res) {
       success: false,
       message: 'Failed to redirect URL',
     });
+  }
+}
+
+export async function updateUrlController(req,res){
+  try{
+    const { shortCode } = req.params;
+    const { originalUrl, expiresAt, isActive } = req.body;
+
+    const updatedUrl = await updateUrlForUser({
+      shortCode,
+      userId: req.user.userId,
+      originalUrl,
+      expiresAt,
+      isActive,
+    });
+
+    if(!updatedUrl){
+      return res.status(404).json({
+        success: false,
+        message: 'URL not found.'
+      })
+    }
+
+    return res.status(200).json({
+      success:true,
+      data:{
+        url:updatedUrl,
+      }
+    })
+  }
+  catch(error){
+    if(error.code==='NO_UPDATE_FIELDS'){
+      return res.status(400).json({
+        success:false,
+        message:'No fields provided for update.'
+      })
+    }
+    console.error('Failed to update URL:', error);
+    return res.status(500).json({
+      success:false,
+      message:'Failed to update URL.'
+    })
+  }
+}
+
+export async function deleteUrlController(req,res){
+  try{
+    const { shortCode } = req.params;
+
+    const deletedUrl=await deleteUrlForUser({
+      shortCode,
+      userId:req.user.userId
+    })
+    
+    if(!deletedUrl){
+      return res.status(404).json({
+        success:false,
+        message:'URL not found.',
+      })
+    }
+
+    return res.status(200).json({
+      success:true,
+      message:'URL deleted successfully',
+    })
+  }
+  catch(error){
+    console.error('Failed to delete URL:', error);
+    return res.status(500).json({
+      success:false,
+      message:'Failed to delete URL.',
+    })
   }
 }
