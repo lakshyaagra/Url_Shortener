@@ -7,16 +7,18 @@ import {
   redirectUrl
 } from '../controllers/url.controller.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { validateCreateUrl,validateUpdateUrl } from '../middleware/validationMiddleware.js';
+import { asyncHandler } from '../utils/async-handler.js'
 
 const router = Router();
 
-router.get('/', authMiddleware, getUrls);
-router.post('/', authMiddleware, createUrlController);
-router.patch('/:shortCode', authMiddleware, updateUrlController);
-router.delete('/:shortCode', authMiddleware, deleteUrlController);
+router.get('/', authMiddleware, asyncHandler(getUrls));
+router.post('/', authMiddleware, validateCreateUrl, asyncHandler(createUrlController));
+router.patch('/:shortCode', authMiddleware, validateUpdateUrl, asyncHandler(updateUrlController));
+router.delete('/:shortCode', authMiddleware, asyncHandler(deleteUrlController));
 
 
 // everyone should be able to use the short URL
-router.get('/:shortCode', redirectUrl);
+router.get('/:shortCode', asyncHandler(redirectUrl));
 
 export default router;

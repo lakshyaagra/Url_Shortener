@@ -4,6 +4,9 @@ import urlRoutes from './routes/url.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import 'temporal-polyfill/global';
 
+import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
+
 const app = express();
 
 app.use(express.json());
@@ -17,6 +20,9 @@ app.get('/health', (_, res) => {
 
 app.use('/api/v1/urls', urlRoutes);
 app.use('/api/v1/auth', authRoutes);
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 3000;
 
