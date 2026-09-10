@@ -1,15 +1,27 @@
 import 'dotenv/config';
+import 'temporal-polyfill/global';
+
 import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import { generalRateLimiter } from './middleware/rateLimitMiddleware.js';
+
 import urlRoutes from './routes/url.routes.js';
 import authRoutes from './routes/auth.routes.js';
-import 'temporal-polyfill/global';
 
 import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 
 const app = express();
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+  })
+);
 
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
+app.use(generalRateLimiter)
 
 app.get('/health', (_, res) => {
   res.json({
