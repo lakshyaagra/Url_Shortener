@@ -1,5 +1,16 @@
 export function errorMiddleware(err, req, res, next) {
-  console.error(err);
+  console.error(
+    JSON.stringify({
+      type: 'error',
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl,
+      errorName: err.name,
+      errorCode: err.code,
+      message: err.message,
+      stack: err.stack,
+    })
+  );
 
   if (err.code === 'EMAIL_ALREADY_EXISTS') {
     return res.status(409).json({

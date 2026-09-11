@@ -5,6 +5,8 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { generalRateLimiter } from './middleware/rateLimitMiddleware.js';
+import { requestIdMiddleware } from './middleware/request-id.middleware.js';
+import { requestLoggerMiddleware } from './middleware/request-logger.middleware.js';
 
 import urlRoutes from './routes/url.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -13,6 +15,8 @@ import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 
 const app = express();
+app.use(requestIdMiddleware);
+app.use(requestLoggerMiddleware);
 app.use(helmet());
 app.use(
   cors({
