@@ -5,11 +5,41 @@ import { generateShortCode } from '../utils/short-code.js';
 // db.orm.public.Urls
 // means we're accessing the Urls model generated from our Prisma contract.
 
-export async function getAllUrls(userId) {
+export async function getAllUrls({ 
+  userId,
+  page=1,
+  limit=10,
+  isActive,
+  sortBy='createdAt',
+  order='desc',
+}){
+  // Ensure numbers for limit/offset
+  const numericLimit = Number(limit);
+  const numericPage = Number(page);
+  const skip = (numericPage - 1) * numericLimit;
+
+  const filter={userId};
+
+  if(isActive!==undefined){
+    filter.isActive=isActive;
+  }
+
+  // -------------------------
+  // Sorting
+  // -------------------------
+
+  let orderBy;
+
+  if (sortBy === 'createdAt') {
+    orderBy = (url) => order === 'asc' ? url.createdAt.asc() : url.createdAt.desc();
+  }
+
+  if (sortBy === 'expiresAt') {
+    orderBy = (url) => order === 'asc' ? url.expiresAt.asc() : url.expiresAt.desc();
+  }
+
   const urls = await db.orm.public.Urls
-    .where({
-      userId
-    })
+    .where(filter)
     .select(
       'id',
       'userId',
@@ -19,9 +49,36 @@ export async function getAllUrls(userId) {
       'expiresAt',
       'isActive'
     )
+    .orderBy(orderBy)
+    .limit(numericLimit)
+    .offset(skip)
     .all();
 
-  return urls;
+    const totalUrls = await db.orm.public.Urls
+      .where(filter)
+      .aggregate((agg) => ({
+        count: agg.count(),
+      }));
+
+      // basically
+      // SELECT COUNT(id) AS count 
+      // FROM public.urls 
+      // WHERE ;
+
+      const total = Number(totalUrls.count ?? 0);
+      const totalPages = Math.ceil(total / numericLimit);
+
+      return {
+        urls,
+        pagination:{
+          numericPage,
+          numericLimit,
+          total,
+          totalPages,
+          hasNextPage: numericPage < totalPages,
+          hasPrevPage: numericPage > 1,
+        }
+      };
 }
 
 export async function createUrl({ userId, originalUrl }) {

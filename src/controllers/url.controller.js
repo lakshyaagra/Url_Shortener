@@ -3,11 +3,22 @@ import { getAllUrls, createUrl, getUrlByShortCode,
       } from '../services/url.service.js';
 
 export async function getUrls(req, res) {
-    const urls = await getAllUrls(req.user.userId);
-    return res.status(200).json({
-      success: true,
-      data: urls,
-    });
+  const { page,limit,isActive,sortBy,order } = req.query;
+
+  const result = await getAllUrls({
+    userId: req.user.userId,
+    page,
+    limit,
+    isActive,
+    sortBy,
+    order,
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: result.urls,
+    pagination: result.pagination,
+  });
 }
 
 export async function createUrlController(req, res) {
@@ -100,6 +111,7 @@ export async function updateUrlController(req,res){
       }
     })
 }
+
 export async function deleteUrlController(req,res){
     const { shortCode } = req.params;
 

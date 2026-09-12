@@ -233,9 +233,91 @@ const validateUpdateUrl = (req, res, next) => {
   next();
 };
 
+const validateGetUrls = (req, res, next) => {
+  let {
+    page = '1',
+    limit = '10',
+    isActive,
+    sortBy = 'createdAt',
+    order = 'desc',
+  } = req.query;
+
+  // -------------------------
+  // page
+  // -------------------------
+  page = Number(page);
+
+  if (!Number.isInteger(page) || page < 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'page must be a positive integer.',
+    });
+  }
+
+  // -------------------------
+  // limit
+  // -------------------------
+  limit = Number(limit);
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({
+      success: false,
+      message: 'limit must be an integer between 1 and 100.',
+    });
+  }
+
+  // -------------------------
+  // isActive
+  // -------------------------
+  if (isActive !== undefined) {
+    if (isActive !== 'true' && isActive !== 'false') {
+      return res.status(400).json({
+        success: false,
+        message: 'isActive must be true or false.',
+      });
+    }
+    isActive = isActive === 'true';
+  }
+
+  // -------------------------
+  // sortBy
+  // -------------------------
+  const allowedSortFields = [
+    'createdAt',
+    'expiresAt',
+  ];
+
+  if (!allowedSortFields.includes(sortBy)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid sortBy value.',
+    });
+  }
+
+  // -------------------------
+  // order
+  // -------------------------
+  if (order !== 'asc' && order !== 'desc') {
+    return res.status(400).json({
+      success: false,
+      message: 'order must be asc or desc only.',
+    });
+  }
+
+  // Store validated/normalized values.
+  req.query.page = page;
+  req.query.limit = limit;
+  req.query.isActive = isActive;
+  req.query.sortBy = sortBy;
+  req.query.order = order;
+
+  next();
+};
+
 export {
   validateRegister,
   validateLogin,
   validateCreateUrl,
   validateUpdateUrl,
+  validateGetUrls,
 };
