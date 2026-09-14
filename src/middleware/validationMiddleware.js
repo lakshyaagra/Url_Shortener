@@ -314,10 +314,40 @@ const validateGetUrls = (req, res, next) => {
   next();
 };
 
+const validateAnalytics = (req, res, next) => {
+  let {
+    page = '1',
+    limit = '10',
+  } = req.query;
+
+  page = Number(page);
+  limit = Number(limit);
+
+  if (!Number.isInteger(page) || page < 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'page must be a positive integer.',
+    });
+  }
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({
+      success: false,
+      message: 'limit must be an integer between 1 and 100.',
+    });
+  }
+
+  req.query.page = page;
+  req.query.limit = limit;
+
+  next();
+};
+
 export {
   validateRegister,
   validateLogin,
   validateCreateUrl,
   validateUpdateUrl,
   validateGetUrls,
+  validateAnalytics,
 };

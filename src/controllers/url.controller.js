@@ -1,5 +1,5 @@
 import { getAllUrls, createUrl, getUrlByShortCode,
-        recordClick, updateUrlForUser, deleteUrlForUser 
+        recordClick, updateUrlForUser, deleteUrlForUser, getUrlAnalytics 
       } from '../services/url.service.js';
 
 export async function getUrls(req, res) {
@@ -130,4 +130,21 @@ export async function deleteUrlController(req,res){
       success:true,
       message:'URL deleted successfully',
     })
+}
+
+export async function getUrlAnalyticsController(req, res) {
+  const { shortCode } = req.params;
+  const { page, limit } = req.query;
+
+  const analytics = await getUrlAnalytics({
+    shortCode,
+    userId: req.user.userId,
+    page,
+    limit,
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: analytics,
+  });
 }

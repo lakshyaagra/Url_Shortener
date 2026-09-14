@@ -224,3 +224,143 @@ export async function deleteUrlForUser({ shortCode, userId }){
 
       return deletedUrl;
 }
+
+export async function getUrlAnalytics({
+  shortCode,
+  userId,
+  page = 1,
+  limit = 10,
+}) {
+  const numericPage = Number(page);
+  const numericLimit = Number(limit);
+
+  const skip = (numericPage - 1) * numericLimit;
+
+  // Find URL and verify ownership
+  const url = await db.orm.public.Urls
+    .where({
+      shortCode,
+      userId,
+    })
+    .select(
+      'id',
+      'shortCode',
+      'originalUrl'
+    )
+    .first();
+
+  if (!url) {
+    const error = new Error('URL not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Total clicks
+  const totalResult = await db.orm.public.Clicks
+    .where({
+      urlId: url.id,
+    })
+    .aggregate((agg) => ({
+      count: agg.count(),
+    }));
+
+  const totalClicks = Number(totalResult.count ?? 0);
+
+  // Recent clicks
+  const recentClicks = await db.orm.public.Clicks
+    .where({
+      urlId: url.id,
+    })
+    .select(
+      'id',
+      'clickedAt',
+      'ipAddress',
+      'userAgent',
+      'referrer'
+    )
+    .orderBy((click) => click.clickedAt.desc())
+    .limit(numericLimit)
+    .offset(skip)
+    .all();
+
+  // Pagination
+  const totalPages = Math.ceil(totalClicks / numericLimit);
+
+  const pagination = {
+    page: numericPage,
+    limit: numericLimit,
+    total: totalClicks,
+    totalPages,
+    hasNextPage: numericPage < totalPages,
+    hasPrevPage: numericPage > 1,
+  };
+
+  // Referrer breakdown
+  const referrerStats = await db.orm.public.Clicks
+    .where({
+      urlId: url.id,
+    })
+    .groupBy('referrer')
+    .aggregate((agg) => ({
+      clicks: agg.count(),
+    }));
+
+  const referrers = referrerStats.map((item) => ({
+    referrer: item.referrer ?? 'Direct / Unknown',
+    clicks: Number(item.clicks),
+  }));
+
+  // User-agent breakdown
+  const userAgentStats = await db.orm.public.Clicks
+    .where({
+      urlId: url.id,
+    })
+    .groupBy('userAgent')
+    .aggregate((agg) => ({
+      clicks: agg.count(),
+    }));
+
+  const userAgents = userAgentStats.map((item) => ({
+    userAgent: item.userAgent ?? 'Unknown',
+    clicks: Number(item.clicks),
+  }));
+
+  // Clicks over time
+  const clickTimestamps = await db.orm.public.Clicks
+    .where({
+      urlId: url.id,
+    })
+    .select('clickedAt')
+    .all();
+
+  const clicksByDate = {};
+
+  for (const click of clickTimestamps) {
+    if (!click.clickedAt) continue;
+
+    const date = click.clickedAt
+      .toString()
+      .slice(0, 10);
+
+    clicksByDate[date] = (clicksByDate[date] ?? 0) + 1;
+  }
+
+  const clicksOverTime = Object.entries(clicksByDate)
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([date, clicks]) => ({
+      date,
+      clicks,
+    }));
+
+  return {
+    url,
+    summary: {
+      totalClicks,
+    },
+    recentClicks,
+    pagination,
+    referrers,
+    userAgents,
+    clicksOverTime,
+  };
+}
