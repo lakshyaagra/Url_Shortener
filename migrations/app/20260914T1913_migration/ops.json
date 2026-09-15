@@ -1,0 +1,304 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.clicks",
+    "label": "Create table \"clicks\"",
+    "summary": "Creates table \"clicks\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "clicks"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"clicks\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"clicks\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"clicks\"",
+        "sql": "CREATE TABLE \"public\".\"clicks\" (\n  \"clicked_at\" timestamp DEFAULT (now()),\n  \"id\" SERIAL NOT NULL,\n  \"ip_address\" character varying(45),\n  \"referrer\" character varying(2048),\n  \"url_id\" int4 NOT NULL,\n  \"user_agent\" character varying(500),\n  CONSTRAINT \"clicks_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"clicks\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"clicks\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.urls",
+    "label": "Create table \"urls\"",
+    "summary": "Creates table \"urls\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "urls"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"urls\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"urls\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"urls\"",
+        "sql": "CREATE TABLE \"public\".\"urls\" (\n  \"created_at\" timestamp DEFAULT (now()),\n  \"expires_at\" timestamp,\n  \"id\" SERIAL NOT NULL,\n  \"is_active\" bool DEFAULT true,\n  \"original_url\" character varying(2048) NOT NULL,\n  \"short_code\" character varying(20) NOT NULL,\n  \"user_id\" int4 NOT NULL,\n  CONSTRAINT \"urls_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"urls\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"urls\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.users",
+    "label": "Create table \"users\"",
+    "summary": "Creates table \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"users\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"users\"",
+        "sql": "CREATE TABLE \"public\".\"users\" (\n  \"created_at\" timestamp DEFAULT (now()),\n  \"email\" character varying(255) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" character varying(100) NOT NULL,\n  \"password_hash\" character varying(100) NOT NULL,\n  CONSTRAINT \"users_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"users\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.urls.urls_short_code_key",
+    "label": "Add unique constraint on \"urls\" (short_code)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "urls_short_code_key",
+        "table": "urls"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"urls_short_code_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "urls_short_code_key",
+          "public",
+          "\"public\".\"urls\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"urls_short_code_key\"",
+        "sql": "ALTER TABLE \"public\".\"urls\" ADD CONSTRAINT \"urls_short_code_key\" UNIQUE (\"short_code\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"urls_short_code_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "urls_short_code_key",
+          "public",
+          "\"public\".\"urls\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.users.users_email_key",
+    "label": "Add unique constraint on \"users\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_email_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_email_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"users_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_email_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.clicks.fk_clicks_url",
+    "label": "Add foreign key \"fk_clicks_url\" on \"clicks\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "fk_clicks_url",
+        "table": "clicks"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"fk_clicks_url\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fk_clicks_url",
+          "public",
+          "\"public\".\"clicks\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"fk_clicks_url\"",
+        "sql": "ALTER TABLE \"public\".\"clicks\"\nADD CONSTRAINT \"fk_clicks_url\"\nFOREIGN KEY (\"url_id\")\nREFERENCES \"public\".\"urls\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"fk_clicks_url\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fk_clicks_url",
+          "public",
+          "\"public\".\"clicks\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.urls.fk_urls_user",
+    "label": "Add foreign key \"fk_urls_user\" on \"urls\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "fk_urls_user",
+        "table": "urls"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"fk_urls_user\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fk_urls_user",
+          "public",
+          "\"public\".\"urls\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"fk_urls_user\"",
+        "sql": "ALTER TABLE \"public\".\"urls\"\nADD CONSTRAINT \"fk_urls_user\"\nFOREIGN KEY (\"user_id\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"fk_urls_user\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fk_urls_user",
+          "public",
+          "\"public\".\"urls\""
+        ]
+      }
+    ]
+  }
+]

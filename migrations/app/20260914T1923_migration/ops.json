@@ -1,0 +1,80 @@
+[
+  {
+    "id": "index.clicks.idx_clicks_url_id_clicked_at",
+    "label": "Create index \"idx_clicks_url_id_clicked_at\" on \"clicks\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "idx_clicks_url_id_clicked_at",
+        "table": "clicks"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"idx_clicks_url_id_clicked_at\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_clicks_url_id_clicked_at\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"idx_clicks_url_id_clicked_at\"",
+        "sql": "CREATE INDEX \"idx_clicks_url_id_clicked_at\" ON \"public\".\"clicks\" (\"url_id\", \"clicked_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"idx_clicks_url_id_clicked_at\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_clicks_url_id_clicked_at\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.urls.idx_urls_user_id_created_at",
+    "label": "Create index \"idx_urls_user_id_created_at\" on \"urls\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "idx_urls_user_id_created_at",
+        "table": "urls"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"idx_urls_user_id_created_at\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_urls_user_id_created_at\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"idx_urls_user_id_created_at\"",
+        "sql": "CREATE INDEX \"idx_urls_user_id_created_at\" ON \"public\".\"urls\" (\"user_id\", \"created_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"idx_urls_user_id_created_at\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_urls_user_id_created_at\""
+        ]
+      }
+    ]
+  }
+]

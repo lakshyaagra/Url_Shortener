@@ -23,6 +23,7 @@ model Urls {
   clicks      Clicks[]
   user        Users         @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_urls_user", index: false)
 
+  @@index([userId, createdAt], map: "idx_urls_user_id_created_at")
   @@map("urls")
 }
 
@@ -35,5 +36,6 @@ model Clicks {
   referrer  VarChar(2048)?
   url       Urls           @relation(fields: [urlId], references: [id], onDelete: Cascade, map: "fk_clicks_url", index: false)
 
+  @@index([urlId, clickedAt], map: "idx_clicks_url_id_clicked_at")
   @@map("clicks")
 }

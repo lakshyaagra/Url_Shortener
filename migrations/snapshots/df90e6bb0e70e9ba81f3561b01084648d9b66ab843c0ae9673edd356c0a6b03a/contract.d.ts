@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d5420ef517956dcc9e0577812654b3ac6624fdfed480025194a3971a7f89bdd5'>;
+  StorageHashBase<'df90e6bb0e70e9ba81f3561b01084648d9b66ab843c0ae9673edd356c0a6b03a'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -411,13 +411,7 @@ type ContractBase = Omit<
               };
               primaryKey: { readonly columns: readonly ['id']; readonly name: 'clicks_pkey' };
               uniques: readonly [];
-              indexes: readonly [
-                {
-                  readonly name: 'idx_clicks_url_id_clicked_at';
-                  readonly columns: readonly ['url_id', 'clicked_at'];
-                  readonly unique: false;
-                },
-              ];
+              indexes: readonly [];
               foreignKeys: readonly [
                 {
                   readonly source: {
@@ -487,13 +481,7 @@ type ContractBase = Omit<
               uniques: readonly [
                 { readonly columns: readonly ['short_code']; readonly name: 'urls_short_code_key' },
               ];
-              indexes: readonly [
-                {
-                  readonly name: 'idx_urls_user_id_created_at';
-                  readonly columns: readonly ['user_id', 'created_at'];
-                  readonly unique: false;
-                },
-              ];
+              indexes: readonly [];
               foreignKeys: readonly [
                 {
                   readonly source: {
