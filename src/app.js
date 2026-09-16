@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import 'temporal-polyfill/global';
+import redisClient from './config/redis.js';
 
 import express from 'express';
 import helmet from 'helmet';
@@ -42,6 +43,26 @@ app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Redis connection and server start
+async function startServer() {
+  try {
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+
+    console.log('Redis connected');
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Redis connection failed:', error);
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log('Starting without Redis cache');
+    });
+  }
+}
+
+startServer();
