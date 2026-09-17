@@ -1,6 +1,9 @@
 import { db } from '../prisma/db.ts';
 import { generateShortCode } from '../utils/short-code.js';
-
+import {
+  getCachedUrl,
+  cacheUrl,
+} from './url-cache.service.js';
 
 // db.orm.public.Urls
 // means we're accessing the Urls model generated from our Prisma contract.
@@ -120,11 +123,24 @@ export async function createUrl({ userId, originalUrl }) {
 }
 
 export async function getUrlByShortCode(shortCode) {
+  const cachedUrl = await getCachedUrl(shortCode);
+
+  if (cachedUrl) {
+    console.log(`Redis cache HIT: ${shortCode}`);
+    return cachedUrl;
+  }
+
+  console.log(`Redis cache MISS: ${shortCode}`);
+
   const url = await db.orm.public.Urls
     .where({
       shortCode,
     })
     .first();
+
+  if (url) {  //if record exists in database then cache it in redis for future use
+    await cacheUrl(url);
+  }
 
   return url;
 }

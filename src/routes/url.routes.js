@@ -10,6 +10,7 @@ import {
 import authMiddleware from '../middleware/authMiddleware.js';
 import { validateCreateUrl,validateUpdateUrl, validateGetUrls, validateAnalytics } from '../middleware/validationMiddleware.js';
 import { asyncHandler } from '../utils/async-handler.js'
+import { redisRateLimitMiddleware } from '../middleware/redisRateLimitMiddleware.js';
 
 const router = Router();
 
@@ -20,6 +21,6 @@ router.delete('/:shortCode', authMiddleware, asyncHandler(deleteUrlController));
 router.get('/:shortCode/analytics',authMiddleware, validateAnalytics, asyncHandler(getUrlAnalyticsController));
 
 // everyone should be able to use the short URL
-router.get('/:shortCode', asyncHandler(redirectUrl));
+router.get('/:shortCode',redisRateLimitMiddleware, asyncHandler(redirectUrl));
 
 export default router;
