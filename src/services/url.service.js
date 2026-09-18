@@ -4,6 +4,7 @@ import {
   getCachedUrl,
   cacheUrl,
 } from './url-cache.service.js';
+import { deleteUrlCache } from './url-cache.service.js';
 
 // db.orm.public.Urls
 // means we're accessing the Urls model generated from our Prisma contract.
@@ -215,7 +216,9 @@ export async function updateUrlForUser({
       })
       .update(updates);
 
-      return updatedUrl;
+    await deleteUrlCache(shortCode);
+
+    return updatedUrl;
 }
 
 export async function deleteUrlForUser({ shortCode, userId }){
@@ -238,7 +241,9 @@ export async function deleteUrlForUser({ shortCode, userId }){
       })
       .delete();
 
-      return deletedUrl;
+    await deleteUrlCache(shortCode);
+
+    return deletedUrl;
 }
 
 export async function getUrlAnalytics({

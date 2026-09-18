@@ -46,3 +46,13 @@ export async function cacheUrl(url) {
     }
   );
 }
+
+export async function deleteUrlCache(shortCode) {
+  if (!redisClient.isReady) {
+    return;
+  }
+
+  const key = getCacheKey(shortCode);
+
+  await redisClient.del(key);
+}
