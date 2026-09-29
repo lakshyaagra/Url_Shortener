@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+postman/
+.postman/
+docs/
+.env.test
+npm-debug.log
+Dockerfile
+.dockerignore
+
+# Version control & OS metadata
+.git
+.gitignore
+.DS_Store
+npm-debug.log*

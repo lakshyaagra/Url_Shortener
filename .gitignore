@@ -4,3 +4,5 @@ dist/
 postman/
 .postman/
 docs/
+.env.test
+.env.docker
