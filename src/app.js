@@ -4,6 +4,8 @@ import 'temporal-polyfill/global';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors'; 
+import { env } from './config/env.js'
+
 import { generalRateLimiter } from './middleware/rateLimitMiddleware.js';
 import { requestIdMiddleware } from './middleware/request-id.middleware.js';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware.js';
@@ -15,12 +17,17 @@ import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 
 const app = express();
+
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // Trust 1 hop (Render, Heroku, Railway, NGINX)
+}
+
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: env.FRONTEND_URL,
   })
 );
 
