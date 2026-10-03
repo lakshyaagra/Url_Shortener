@@ -2,18 +2,41 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
-
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [main, master]
 
 jobs:
   test:
+    name: Test (Node + Postgres + Redis)
     runs-on: ubuntu-latest
+
+    # Same images and healthchecks as compose.yaml.
+    # The tests run on the runner itself, so we publish ports to localhost.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: url_shortener_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d url_shortener_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
 
     steps:
       - name: Checkout repository
@@ -25,14 +48,35 @@ jobs:
           node-version: '24.12.0'
           package-manager-cache: false
 
-      - name: Check Node and npm versions
-        run: |
-          node --version
-          npm --version
-          npm config get registry
-
       - name: Install dependencies
         run: npm ci
 
+      # .env.test is gitignored, so CI creates it. These are throwaway
+      # values for a disposable database, not real secrets.
+      - name: Create .env.test
+        run: |
+          cat > .env.test <<'ENVEOF'
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/url_shortener_test
+          JWT_SECRET=ci-only-jwt-secret-not-used-anywhere-else-123456
+          JWT_EXPIRES_IN=1h
+          BCRYPT_SALT_ROUNDS=12
+          FRONTEND_URL=http://localhost:5173
+          REDIS_URL=redis://localhost:6379
+          ENVEOF
+
+      # Prisma 8 command: creates the tables/indexes from the contract
+      # in the empty CI database.
+      - name: Create database schema
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/url_shortener_test
+        run: npx prisma db init --db "$DATABASE_URL" --yes
+
       - name: Run automated tests
         run: npm test
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker build -t url-shortener:ci .
