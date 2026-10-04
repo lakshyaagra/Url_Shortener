@@ -5,11 +5,26 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch: # lets you run CI manually from the Actions tab
+
+# The workflow only needs to read the repo. Least privilege by default.
+permissions:
+  contents: read
+
+# If you push again while CI is still running on the same branch/PR,
+# cancel the older run. It is already out of date.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # ---------------------------------------------------------------
+  # CI job 1: run the real automated tests
+  # ---------------------------------------------------------------
   test:
     name: Test (Node + Postgres + Redis)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     # Same images and healthchecks as compose.yaml.
     # The tests run on the runner itself, so we publish ports to localhost.
@@ -74,9 +89,82 @@ jobs:
       - name: Run automated tests
         run: npm test
 
+  # ---------------------------------------------------------------
+  # CI job 2: build the production Docker image and prove it boots
+  # (runs in parallel with `test`, they don't depend on each other)
+  # ---------------------------------------------------------------
   docker-build:
-    name: Docker image builds
+    name: Docker build + smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # The server connects to Redis on startup, so give the container
+    # the same kind of neighbours it has in compose.yaml.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: url_shortener_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d url_shortener_smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
-      - uses: actions/checkout@v6
-      - run: docker build -t url-shortener:ci .
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build -t url-shortener:ci .
+
+      # --network host: the container shares the runner's network, so
+      # "localhost" inside it reaches the Postgres/Redis service containers.
+      # The image sets NODE_ENV=production itself, so this boots the
+      # same way it will in production (env validation, trust proxy, ...).
+      - name: Start container
+        run: |
+          docker run -d --name api --network host \
+            -e PORT=3000 \
+            -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/url_shortener_smoke \
+            -e REDIS_URL=redis://localhost:6379 \
+            -e JWT_SECRET=ci-only-jwt-secret-not-used-anywhere-else-123456 \
+            -e JWT_EXPIRES_IN=1h \
+            -e BCRYPT_SALT_ROUNDS=12 \
+            -e FRONTEND_URL=http://localhost:5173 \
+            url-shortener:ci
+
+      # Smoke test: poll /health for up to ~60s. Fails the job if the
+      # container never becomes healthy.
+      - name: Smoke test /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health; then
+              echo
+              echo "Container is healthy"
+              exit 0
+            fi
+            echo "Waiting for container... ($i/30)"
+            sleep 2
+          done
+          echo "Container never became healthy"
+          exit 1
+
+      - name: Show container logs
+        if: always()
+        run: docker logs api
+
