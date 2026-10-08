@@ -263,3 +263,6 @@ jobs:
           done
           echo "Production did not report commit $GITHUB_SHA in time"
           exit 1
+
+          postgresql://url_shortener_db_8xe6_user:dMif2a4MevxYiX39ymJIaCV79GC0maD6@dpg-db3aehnlk1mc739vfcf0-a/url_shortener_db_8xe6
+          redis://red-db3am5ijnfac7398bp40:6379
