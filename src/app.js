@@ -32,7 +32,6 @@ app.use(
 );
 
 app.use(express.json({ limit: '10kb' }));
-app.use(generalRateLimiter)
 
 app.get('/health', (_, res) => {
   res.json({
@@ -41,6 +40,8 @@ app.get('/health', (_, res) => {
     commit: process.env.GIT_SHA || 'unknown',
   });
 });
+
+app.use(generalRateLimiter);
 
 app.use('/api/v1/urls', urlRoutes);
 app.use('/api/v1/auth', authRoutes);
