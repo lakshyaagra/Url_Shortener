@@ -12,6 +12,10 @@ EXPOSE 3000
 
 ENV NODE_ENV=production
 
+ARG GIT_SHA=unknown
+
+ENV GIT_SHA=$GIT_SHA
+
 CMD ["node", "src/server.js"]
 
 

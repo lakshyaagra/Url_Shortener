@@ -38,6 +38,7 @@ app.get('/health', (_, res) => {
   res.json({
     success: true,
     message: 'URL Shortener API is running',
+    commit: process.env.GIT_SHA || 'unknown',
   });
 });
 

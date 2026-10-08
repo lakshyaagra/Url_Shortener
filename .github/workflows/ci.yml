@@ -1,25 +1,26 @@
-name: CI
+name: CI/CD
 
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
-  workflow_dispatch: # lets you run CI manually from the Actions tab
+  workflow_dispatch: # lets you run the pipeline manually from the Actions tab
 
 # The workflow only needs to read the repo. Least privilege by default.
+# (The docker-build job asks for more, only for itself.)
 permissions:
   contents: read
 
-# If you push again while CI is still running on the same branch/PR,
-# cancel the older run. It is already out of date.
+# Pushing again while CI runs on a PR/feature branch cancels the stale run.
+# On main we NEVER cancel: a run may be in the middle of a deployment.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   # ---------------------------------------------------------------
-  # CI job 1: run the real automated tests
+  # CI job 1: run the real automated tests (unchanged since Day 25)
   # ---------------------------------------------------------------
   test:
     name: Test (Node + Postgres + Redis)
@@ -90,13 +91,22 @@ jobs:
         run: npm test
 
   # ---------------------------------------------------------------
-  # CI job 2: build the production Docker image and prove it boots
-  # (runs in parallel with `test`, they don't depend on each other)
+  # CI job 2: build the production image ONCE, prove it boots, and
+  # (only on main) publish that exact image to the registry.
   # ---------------------------------------------------------------
   docker-build:
-    name: Docker build + smoke test
+    name: Docker build + smoke test + publish
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    # Only this job may write to GitHub Container Registry (GHCR).
+    permissions:
+      contents: read
+      packages: write
+
+    # Handed to the deploy job: the exact image tag that was verified.
+    outputs:
+      image: ${{ steps.publish.outputs.image }}
 
     # The server connects to Redis on startup, so give the container
     # the same kind of neighbours it has in compose.yaml.
@@ -129,13 +139,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # GIT_SHA is baked into the image so /health can report which
+      # commit is running. The label links the GHCR package to this repo.
       - name: Build Docker image
-        run: docker build -t url-shortener:ci .
+        run: |
+          docker build \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            -t url-shortener:ci .
 
       # --network host: the container shares the runner's network, so
       # "localhost" inside it reaches the Postgres/Redis service containers.
       # The image sets NODE_ENV=production itself, so this boots the
-      # same way it will in production (env validation, trust proxy, ...).
+      # same way it will in production. All values here are throwaway.
       - name: Start container
         run: |
           docker run -d --name api --network host \
@@ -148,14 +164,15 @@ jobs:
             -e FRONTEND_URL=http://localhost:5173 \
             url-shortener:ci
 
-      # Smoke test: poll /health for up to ~60s. Fails the job if the
-      # container never becomes healthy.
+      # Smoke test: poll /health for up to ~60s, then check the response
+      # reports THIS commit (proves the SHA made it into the image).
       - name: Smoke test /health
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:3000/health; then
-              echo
-              echo "Container is healthy"
+            if curl -fsS http://localhost:3000/health -o health.json; then
+              cat health.json; echo
+              jq -e --arg sha "$GITHUB_SHA" '.commit == $sha' health.json > /dev/null
+              echo "Container is healthy and reports commit $GITHUB_SHA"
               exit 0
             fi
             echo "Waiting for container... ($i/30)"
@@ -168,3 +185,81 @@ jobs:
         if: always()
         run: docker logs api
 
+      # Publish ONLY from main, and only after the smoke test passed.
+      # Pull requests never reach these two steps.
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      # Same image, two tags: the commit SHA (immutable, what we deploy)
+      # and latest (the default image the Render service is created with).
+      - name: Push verified image
+        id: publish
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker tag url-shortener:ci "$IMAGE:$GITHUB_SHA"
+          docker tag url-shortener:ci "$IMAGE:latest"
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker push "$IMAGE:latest"
+          echo "image=$IMAGE:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------
+  # CD: deploy to Render, then verify production.
+  # Runs only if BOTH CI jobs are green, and only for a push to main.
+  # ---------------------------------------------------------------
+  deploy:
+    name: Deploy to Render + verify
+    needs: [test, docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # "production" is a GitHub Environment: the deploy hook secret and
+    # the production URL live there, and it shows up under Deployments.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    # Never run two production deploys at the same time, never cancel one.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+
+    permissions: {} # this job needs no access to the repo
+
+    steps:
+      # The deploy hook is a secret URL. Render does NOT redeploy on its
+      # own when an image is pushed, so we tell it which exact tag to run.
+      - name: Trigger Render deploy
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGE: ${{ needs.docker-build.outputs.image }}
+        run: |
+          ENCODED_IMAGE=$(jq -rn --arg v "$IMAGE" '$v | @uri')
+          curl --fail --silent --show-error --output /dev/null \
+            --request POST "${DEPLOY_HOOK_URL}&imgURL=${ENCODED_IMAGE}"
+          echo "Deploy requested for $IMAGE"
+
+      # The old container keeps serving until the new one is healthy, so
+      # a plain "200 OK" proves nothing. We wait until /health reports
+      # the commit we just deployed. Free instances cold-start slowly,
+      # so allow up to ~10 minutes.
+      - name: Verify production /health
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          for i in $(seq 1 60); do
+            BODY=$(curl -fsS --max-time 30 "$PRODUCTION_URL/health" || true)
+            LIVE_SHA=$(echo "$BODY" | jq -r '.commit // empty' 2>/dev/null || true)
+            if [ "$LIVE_SHA" = "$GITHUB_SHA" ]; then
+              echo "Production is healthy and running commit $GITHUB_SHA"
+              exit 0
+            fi
+            echo "Waiting for new version... ($i/60) live commit: ${LIVE_SHA:-none}"
+            sleep 10
+          done
+          echo "Production did not report commit $GITHUB_SHA in time"
+          exit 1
