@@ -5,6 +5,5 @@ dist/
 !.env.example
 postman/
 .postman/
-docs/
 .env.test
 .env.docker

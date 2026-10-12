@@ -235,7 +235,7 @@ export async function deleteUrlForUser({ shortCode, userId }){
       return null;
     }
     
-    const deletedUrl=db.orm.public.Urls
+    const deletedUrl=await db.orm.public.Urls
       .where({
         id:url.id,
       })
