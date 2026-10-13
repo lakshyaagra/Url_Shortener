@@ -3,6 +3,9 @@ name: CI/CD
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main, master]
   workflow_dispatch: # lets you run the pipeline manually from the Actions tab
@@ -25,6 +28,9 @@ jobs:
   test:
     name: Test (Node + Postgres + Redis)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     timeout-minutes: 10
 
     # Same images and healthchecks as compose.yaml.
@@ -146,7 +152,7 @@ jobs:
           docker build \
             --build-arg GIT_SHA="$GITHUB_SHA" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
-            -t url-shortener:ci .
+            -t url-shortener:ci backend
 
       # --network host: the container shares the runner's network, so
       # "localhost" inside it reaches the Postgres/Redis service containers.

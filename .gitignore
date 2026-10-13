@@ -3,7 +3,4 @@ dist/
 .env
 .env.*
 !.env.example
-postman/
-.postman/
-.env.test
-.env.docker
+.DS_Store

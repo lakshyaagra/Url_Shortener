@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+postman/
+.postman/
+.env.test
+.env.docker
