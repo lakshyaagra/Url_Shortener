@@ -220,7 +220,12 @@ const validateUpdateUrl = (req, res, next) => {
         message: 'expiresAt must be a valid date.',
       });
     }
-    req.body.expiresAt = date;
+    // The column is a timestamp without time zone, which the ORM requires as a
+    // Temporal.PlainDateTime. Store it as UTC wall-clock time.
+    req.body.expiresAt = Temporal.Instant
+      .fromEpochMilliseconds(date.getTime())
+      .toZonedDateTimeISO('UTC')
+      .toPlainDateTime(); 
   }
 
   if (isActive !== undefined && typeof isActive !== 'boolean') {

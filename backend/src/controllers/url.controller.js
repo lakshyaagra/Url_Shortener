@@ -1,6 +1,7 @@
 import { getAllUrls, createUrl, getUrlByShortCode,
         recordClick, updateUrlForUser, deleteUrlForUser, getUrlAnalytics 
       } from '../services/url.service.js';
+import { isExpired } from '../utils/expiry.js';
 
 export async function getUrls(req, res) {
   const { page,limit,isActive,sortBy,order } = req.query;
@@ -61,7 +62,7 @@ export async function redirectUrl(req, res) {
       throw error;
     }
 
-    if (url.expiresAt && url.expiresAt <= new Date()) {
+    if (isExpired(url.expiresAt)) { 
       const error = new Error('Short URL has expired');
       error.statusCode = 410;
       throw error;

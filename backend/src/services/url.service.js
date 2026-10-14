@@ -58,6 +58,18 @@ export async function getAllUrls({
     .offset(skip)
     .all();
 
+    // Click count per link: one small COUNT query per row (a page holds at most `limit` rows),
+    // using the same aggregate call the analytics endpoint uses.
+    const urlsWithClicks = await Promise.all(
+      urls.map(async (url) => {
+        const row = await db.orm.public.Clicks
+          .where({ urlId: url.id })
+          .aggregate((agg) => ({ count: agg.count() }));
+
+        return { ...url, clicks: Number(row.count ?? 0) };
+      })
+    );
+
     const totalUrls = await db.orm.public.Urls
       .where(filter)
       .aggregate((agg) => ({
@@ -73,7 +85,7 @@ export async function getAllUrls({
       const totalPages = Math.ceil(total / numericLimit);
 
       return {
-        urls,
+        urls: urlsWithClicks,
         pagination:{
           numericPage,
           numericLimit,
