@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+/* Linkly theme. Change the accent in ONE place: --color-accent (gold). Indigo example: #818cf8 */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --color-accent: #d6b66a;
+  --color-accent-strong: #ecd08a;
+}
+
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: rgb(255 255 255 / 0.1);
+  }
+  :root { color-scheme: dark; }
+  body {
+    min-height: 100vh;
+    color: #f3f1ec;
+    background:
+      radial-gradient(900px 500px at 12% -10%, rgb(214 182 106 / 0.1), transparent 60%),
+      radial-gradient(800px 500px at 100% 0%, rgb(99 102 241 / 0.1), transparent 60%),
+      #0a0a0c;
+    background-attachment: fixed;
+  }
+  h1, h2, h3 { letter-spacing: -0.02em; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  ::selection { background: rgb(214 182 106 / 0.35); }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-2xl border border-white/10 bg-zinc-900/50 shadow-2xl shadow-black/40 backdrop-blur-md;
+  }
+  .field {
+    @apply w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-zinc-100 placeholder-zinc-500 transition focus:border-accent/60 focus:outline-none focus:ring-4 focus:ring-accent/15;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.8rem 1.6rem; border-radius: 0.9rem; font-weight: 700; color: #0a0a0c;
+    background: linear-gradient(180deg, var(--color-accent-strong), var(--color-accent));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), 0 10px 28px -8px rgb(214 182 106 / 0.6);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px); filter: brightness(1.06);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 16px 36px -8px rgb(214 182 106 / 0.75);
+  }
+  .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+  .btn-primary:disabled { opacity: 0.6; }
+
+  .btn-ghost, .btn-danger {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 0.85rem; border-radius: 0.7rem; font-size: 0.8125rem; font-weight: 600;
+    color: #e7e5e0; background: rgb(255 255 255 / 0.07); border: 1px solid rgb(255 255 255 / 0.16);
+    transition: transform 0.15s, box-shadow 0.15s, color 0.15s, border-color 0.15s, background-color 0.15s;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--color-accent-strong); border-color: rgb(214 182 106 / 0.55);
+    background: rgb(214 182 106 / 0.12); transform: translateY(-1px);
+    box-shadow: 0 6px 18px -8px rgb(214 182 106 / 0.5);
+  }
+  .btn-danger:hover:not(:disabled) {
+    color: #fca5a5; border-color: rgb(248 113 113 / 0.55);
+    background: rgb(239 68 68 / 0.12); transform: translateY(-1px);
+    box-shadow: 0 6px 18px -8px rgb(239 68 68 / 0.5);
+  }
+  .btn-ghost:active:not(:disabled), .btn-danger:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+  .btn-ghost:disabled, .btn-danger:disabled { opacity: 0.4; }
+}
+
+/* ---------- Motion ---------- */
+html { scroll-behavior: smooth; }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* fill-mode "backwards": the start state applies during the delay, but once finished the
+   normal styles take over again, so hover transforms keep working. */
+.page-enter { animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.pop-in     { animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+
+/* children of a .stagger container fade up one after another */
+.stagger > * { animation: page-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.stagger > *:nth-child(2) { animation-delay: 70ms; }
+.stagger > *:nth-child(3) { animation-delay: 140ms; }
+.stagger > *:nth-child(4) { animation-delay: 210ms; }
+.stagger > *:nth-child(5) { animation-delay: 280ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 350ms; }
+
+.glass { transition: border-color 0.25s, box-shadow 0.25s, background-color 0.25s, transform 0.25s; }
+.stagger > .glass:hover { transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
