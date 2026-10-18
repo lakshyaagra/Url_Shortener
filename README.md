@@ -1,5 +1,7 @@
 # Linkly API (URL Shortener backend)
 
+**Live app:** https://linklyshort.vercel.app
+
 [![CI/CD](https://github.com/lakshyaagra/Url_Shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/lakshyaagra/Url_Shortener/actions/workflows/ci.yml)
 
 The backend of Linkly : JWT authentication, per-user link management, click analytics, Redis caching, Docker, automated tests and a CI/CD pipeline that deploys to Render.
@@ -131,6 +133,7 @@ npm test
 ```
 
 In CI, every push and pull request starts PostgreSQL 17 and Redis 8 as service containers, creates the schema with Prisma, and runs the same `npm test`. A failing test blocks deployment.
+Redis is used by the Docker smoke-test job.
 
 ## Design decisions
 
@@ -208,5 +211,7 @@ backend/
   migrations/         Prisma migrations
   compose.yaml        API, PostgreSQL and Redis for local development
   Dockerfile
-  .github/workflows/ci.yml   CI/CD pipeline
+.github/workflows/ci.yml   CI/CD pipeline
+frontend/
+  src/...
 ```
