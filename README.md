@@ -2,7 +2,7 @@
 
 [![CI/CD](https://github.com/lakshyaagra/Url_Shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/lakshyaagra/Url_Shortener/actions/workflows/ci.yml)
 
-The backend of [Linkly](../README.md): JWT authentication, per-user link management, click analytics, Redis caching, Docker, automated tests and a CI/CD pipeline that deploys to Render.
+The backend of Linkly : JWT authentication, per-user link management, click analytics, Redis caching, Docker, automated tests and a CI/CD pipeline that deploys to Render.
 
 Live API: https://url-shortener-latest-dgdp.onrender.com (health check: https://url-shortener-latest-dgdp.onrender.com/health)
 
