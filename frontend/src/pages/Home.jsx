@@ -23,13 +23,30 @@ export default function Home() {
     event.preventDefault();
     setError('');
     setResult(null);
+
+    const trimmedUrl = originalUrl.trim();
+
+    // Check if empty
+    if (!trimmedUrl) {
+      setError("Please enter a URL.");
+      return;
+    }
+
+    // Check if valid URL format
+    try {
+      new URL(trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`);
+    } catch (_) {
+      setError("Please enter a valid url.");
+      return;
+    }
+
     setCreating(true);
 
     try {
       // Logged-in users create links in their own account; visitors use the public endpoint.
       const body = await api(token ? '/api/v1/urls' : '/api/v1/urls/public', {
         method: 'POST',
-        body: { originalUrl: originalUrl.trim() },
+        body: { originalUrl: trimmedUrl },
         auth: Boolean(token),
       });
       setResult(body.data);
@@ -65,8 +82,9 @@ export default function Home() {
           Paste a long URL and get a clean short link in a second. No account needed.
         </p>
 
+        {/* Changed type="url" to type="text" and removed required to bypass native browser tooltips */}
         <form onSubmit={handleCreate} className="relative mt-8 flex flex-col gap-3 sm:flex-row">
-          <input type="url" required value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)}
+          <input type="text" value={originalUrl} onChange={(e) => setOriginalUrl(e.target.value)}
             placeholder="https://example.com/a/very/long/link" className="field flex-1 text-base" />
           <button type="submit" disabled={creating} className="btn-primary">
             {creating ? 'Creating...' : <>Create Link <span aria-hidden="true">&rarr;</span></>}
