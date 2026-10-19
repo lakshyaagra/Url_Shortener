@@ -33,7 +33,7 @@ export class ApiError extends Error {
 }
 
 // The public short link for a code (the redirect endpoint of the API).
-export const shortUrlFor = (shortCode) => `${API_URL}/api/v1/urls/${shortCode}`;
+export const shortUrlFor = (shortCode) => `https://linklyshort.vercel.app/${shortCode}`;
 
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {};

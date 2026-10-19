@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/([a-zA-Z0-9-_]{4,10})",
+      "destination": "https://url-shortener-latest-dgdp.onrender.com/api/v1/urls/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
