@@ -22,6 +22,7 @@ import type {
 
 import type {
   ContractWithTypeMaps,
+  RelationKeys,
   TypeMaps as TypeMapsType,
 } from '@prisma/orm-postgres/family-contract/types';
 import type {
@@ -350,6 +351,49 @@ export type StorageColumnInputTypes = {
     };
   };
 };
+
+export namespace Models {
+  export type public_Users = {
+    id: CodecTypes['pg/int4@1']['output'];
+    name: Varchar<100>;
+    email: Varchar<255>;
+    passwordHash: Varchar<100>;
+    createdAt: CodecTypes['pg/timestamp-temporal@1']['output'] | null;
+    urls: public_Urls[];
+    readonly [RelationKeys]?: 'urls';
+  };
+  export type public_Urls = {
+    id: CodecTypes['pg/int4@1']['output'];
+    userId: CodecTypes['pg/int4@1']['output'];
+    shortCode: Varchar<20>;
+    originalUrl: Varchar<2048>;
+    createdAt: CodecTypes['pg/timestamp-temporal@1']['output'] | null;
+    expiresAt: CodecTypes['pg/timestamp-temporal@1']['output'] | null;
+    isActive: CodecTypes['pg/bool@1']['output'] | null;
+    clicks: public_Clicks[];
+    user: public_Users;
+    readonly [RelationKeys]?: 'clicks' | 'user';
+  };
+  export type public_Clicks = {
+    id: CodecTypes['pg/int4@1']['output'];
+    urlId: CodecTypes['pg/int4@1']['output'];
+    clickedAt: CodecTypes['pg/timestamp-temporal@1']['output'] | null;
+    ipAddress: Varchar<45> | null;
+    userAgent: Varchar<500> | null;
+    referrer: Varchar<2048> | null;
+    url: public_Urls;
+    readonly [RelationKeys]?: 'url';
+  };
+}
+
+export declare const models: {
+  public: {
+    Users: Models.public_Users;
+    Urls: Models.public_Urls;
+    Clicks: Models.public_Clicks;
+  };
+};
+
 export type TypeMaps = TypeMapsType<
   CodecTypes,
   QueryOperationTypes,
@@ -618,6 +662,7 @@ type ContractBase = Omit<
               readonly url: {
                 readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Urls' };
                 readonly cardinality: 'N:1';
+                readonly nullable: false;
                 readonly on: {
                   readonly localFields: readonly ['urlId'];
                   readonly targetFields: readonly ['id'];
@@ -700,6 +745,7 @@ type ContractBase = Omit<
                   readonly model: 'Users';
                 };
                 readonly cardinality: 'N:1';
+                readonly nullable: false;
                 readonly on: {
                   readonly localFields: readonly ['userId'];
                   readonly targetFields: readonly ['id'];

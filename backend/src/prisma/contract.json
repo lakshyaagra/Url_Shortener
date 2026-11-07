@@ -78,6 +78,7 @@
             "relations": {
               "url": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "urlId"
@@ -193,6 +194,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
